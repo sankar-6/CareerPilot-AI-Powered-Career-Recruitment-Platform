@@ -1,0 +1,19 @@
+{
+  "name": "ai-careerpilot",
+  "version": "1.0.0",
+  "description": "AI CareerPilot — Career management platform for students and fresh graduates",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["career", "jobs", "resume", "ai", "mern"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
