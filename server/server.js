@@ -30,6 +30,25 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const { errorHandler } = require('./middleware/errorHandler');
 
 // ─── API Routes ─────────────────────────────────────────────
+// Root API Welcome endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: '🚀 AI CareerPilot Backend API is live and operational!',
+    documentation: 'Refer to /api/health for system status.',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      profile: '/api/profile',
+      resumes: '/api/resumes',
+      jobs: '/api/jobs',
+      applications: '/api/applications',
+      interviews: '/api/interviews',
+      dashboard: '/api/dashboard',
+    },
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
