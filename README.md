@@ -117,18 +117,20 @@ npm run dev
 
 ---
 
-## 🌐 Live Production Deployment Guide
+## 🌐 Complete Render Deployment Guide
 
-### 🛠️ 1. Deploy Express Backend to Render
+Deploy your entire full-stack application publicly on **[Render.com](https://render.com)** in 2 simple steps:
 
-1. Log into **[Render.com](https://render.com)** and create a new **Web Service**.
+### 🛠️ Step 1: Deploy Express Backend (Web Service)
+1. Go to **Render Dashboard** ➔ Click **New +** ➔ Select **Web Service**.
 2. Connect your GitHub repository: `CareerPilot-AI-Powered-Career-Recruitment-Platform`.
-3. Configure the following build & start settings:
+3. Configure settings:
 
 | Setting | Value |
 |---|---|
+| **Name** | `ai-careerpilot-backend` |
 | **Root Directory** | `server` |
-| **Environment** | `Node` |
+| **Runtime** | `Node` |
 | **Build Command** | `npm install` |
 | **Start Command** | `node server.js` |
 
@@ -138,25 +140,39 @@ npm run dev
    - `MONGO_URI`: `your_mongodb_atlas_connection_string`
    - `JWT_SECRET`: `your_jwt_secret_key`
    - `GEMINI_API_KEY`: `your_google_gemini_api_key`
-   - `CLIENT_URL`: `https://your-vercel-frontend.vercel.app`
+   - `CLIENT_URL`: `https://ai-careerpilot-frontend.onrender.com`
 
 ---
 
-### ⚡ 2. Deploy React Frontend to Vercel
-
-1. Log into **[Vercel.com](https://vercel.com)** and import your GitHub repository.
-2. Configure project settings:
+### 💻 Step 2: Deploy React Frontend (Static Site)
+1. In Render Dashboard, click **New +** ➔ Select **Static Site**.
+2. Connect the same GitHub repository: `CareerPilot-AI-Powered-Career-Recruitment-Platform`.
+3. Configure settings:
 
 | Setting | Value |
 |---|---|
-| **Framework Preset** | `Vite` |
+| **Name** | `ai-careerpilot-frontend` |
 | **Root Directory** | `client` |
 | **Build Command** | `npm run build` |
-| **Output Directory** | `dist` |
-| **Install Command** | `npm install` |
+| **Publish Directory** | `dist` |
 
-3. Under **Environment Variables**, add:
-   - `VITE_API_URL`: `https://your-render-backend.onrender.com/api`
+4. Under **Environment Variables**, add:
+   - `VITE_API_URL`: `https://ai-careerpilot-backend.onrender.com/api` *(replace with your backend Web Service URL from Step 1)*
+
+5. Under **Redirects/Rewrites**, add:
+   - **Source**: `/*`
+   - **Destination**: `/index.html`
+   - **Action**: `Rewrite`
+
+---
+
+## ⚡ Optional: Deploy Frontend to Vercel
+
+If you prefer Vercel for your frontend:
+
+1. Import repository to **[Vercel](https://vercel.com)**.
+2. Set **Root Directory** to `client`.
+3. Add Environment Variable `VITE_API_URL` set to your Render backend URL: `https://ai-careerpilot-backend.onrender.com/api`.
 
 ---
 
@@ -175,6 +191,8 @@ npm test
 
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
+| GET | `/` | Public | Root API Welcome Endpoint |
+| GET | `/api/health` | Public | System Health Status Check |
 | POST | `/api/auth/register` | Public | Register new Job Seeker or Recruiter |
 | POST | `/api/auth/login` | Public | Authenticate user & return JWT token |
 | POST | `/api/auth/forgotpassword` | Public | Request password reset token |
