@@ -59,14 +59,35 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/profile', require('./routes/profile'));
-app.use('/api/resumes', require('./routes/resume'));
-app.use('/api/jobs', require('./routes/jobs'));
-app.use('/api/applications', require('./routes/applications'));
-app.use('/api/interviews', require('./routes/interviews'));
-app.use('/api/dashboard', require('./routes/dashboard'));
+// Routes (Mounted on both /api/path and /path for maximum compatibility)
+const authRouter = require('./routes/auth');
+const profileRouter = require('./routes/profile');
+const resumeRouter = require('./routes/resume');
+const jobRouter = require('./routes/jobs');
+const applicationRouter = require('./routes/applications');
+const interviewRouter = require('./routes/interviews');
+const dashboardRouter = require('./routes/dashboard');
+
+app.use('/api/auth', authRouter);
+app.use('/auth', authRouter);
+
+app.use('/api/profile', profileRouter);
+app.use('/profile', profileRouter);
+
+app.use('/api/resumes', resumeRouter);
+app.use('/resumes', resumeRouter);
+
+app.use('/api/jobs', jobRouter);
+app.use('/jobs', jobRouter);
+
+app.use('/api/applications', applicationRouter);
+app.use('/applications', applicationRouter);
+
+app.use('/api/interviews', interviewRouter);
+app.use('/interviews', interviewRouter);
+
+app.use('/api/dashboard', dashboardRouter);
+app.use('/dashboard', dashboardRouter);
 
 // ─── 404 Handler ────────────────────────────────────────────
 app.use((req, res) => {
