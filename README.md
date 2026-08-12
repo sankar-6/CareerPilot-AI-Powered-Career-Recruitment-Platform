@@ -38,7 +38,7 @@ AI CareerPilot is a full-stack MERN (MongoDB, Express.js, React.js, Node.js) app
 - **Live AI Evaluation**: Evaluates answers with numerical scores (1-10) and constructive feedback, concluding with an overall performance scorecard.
 
 ### 🏢 7. Recruiter Portal & Candidate Drawer
-- **Job Management**: Create, edit, and delete job postings.
+- **Job Management**: Create, edit, and delete job listings.
 - **Applicant Drawer**: Inspect candidate profiles and update application statuses in real-time.
 - **Recruiter Analytics**: Metrics overview showing *Total Jobs, Active Postings, Total Applicants, and Shortlisted Candidates*.
 
@@ -106,7 +106,7 @@ Run from root:
 
 ```bash
 # Install dependencies
-npm run setup
+npm run install-all
 
 # Launch both server and client concurrently
 npm run dev
@@ -114,6 +114,49 @@ npm run dev
 
 - **Frontend**: `http://localhost:5174` (or `http://localhost:5173`)
 - **Backend API**: `http://localhost:5002/api`
+
+---
+
+## 🌐 Live Production Deployment Guide
+
+### 🛠️ 1. Deploy Express Backend to Render
+
+1. Log into **[Render.com](https://render.com)** and create a new **Web Service**.
+2. Connect your GitHub repository: `CareerPilot-AI-Powered-Career-Recruitment-Platform`.
+3. Configure the following build & start settings:
+
+| Setting | Value |
+|---|---|
+| **Root Directory** | `server` |
+| **Environment** | `Node` |
+| **Build Command** | `npm install` |
+| **Start Command** | `node server.js` |
+
+4. Under **Environment Variables**, add:
+   - `PORT`: `5002`
+   - `NODE_ENV`: `production`
+   - `MONGO_URI`: `your_mongodb_atlas_connection_string`
+   - `JWT_SECRET`: `your_jwt_secret_key`
+   - `GEMINI_API_KEY`: `your_google_gemini_api_key`
+   - `CLIENT_URL`: `https://your-vercel-frontend.vercel.app`
+
+---
+
+### ⚡ 2. Deploy React Frontend to Vercel
+
+1. Log into **[Vercel.com](https://vercel.com)** and import your GitHub repository.
+2. Configure project settings:
+
+| Setting | Value |
+|---|---|
+| **Framework Preset** | `Vite` |
+| **Root Directory** | `client` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+| **Install Command** | `npm install` |
+
+3. Under **Environment Variables**, add:
+   - `VITE_API_URL`: `https://your-render-backend.onrender.com/api`
 
 ---
 
