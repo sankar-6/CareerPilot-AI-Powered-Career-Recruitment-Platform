@@ -174,21 +174,55 @@ Return a JSON object with this EXACT structure:
 };
 
 /**
- * Evaluate Overall Interview
+ * Evaluate Overall Interview (AI-Powered)
  */
 const evaluateOverallInterview = async (questionsWithAnswers) => {
   const totalScore = questionsWithAnswers.reduce((acc, q) => acc + (q.score || 0), 0);
   const avgScore = Math.round((totalScore / (questionsWithAnswers.length * 10)) * 100);
 
+  // Build a summary of all Q&A for AI evaluation
+  const qaSummary = questionsWithAnswers
+    .map((q, i) => `Q${i + 1}: ${q.question}\nAnswer: ${q.userAnswer || 'No answer'}\nScore: ${q.score || 0}/10`)
+    .join('\n\n');
+
+  const prompt = `
+You are an expert technical interview evaluator.
+A candidate just completed a mock interview. Here are all the questions, their answers, and individual scores:
+
+${qaSummary}
+
+Overall Average Score: ${avgScore}%
+
+Based on the actual answers given above, provide a personalized performance evaluation.
+Return a JSON object with this EXACT structure:
+{
+  "overallScore": ${avgScore},
+  "strengths": ["<2-3 specific strengths based on the candidate's actual answers>"],
+  "improvements": ["<2-3 specific areas where the candidate should improve, referencing their actual weak answers>"]
+}
+`;
+
+  try {
+    if (config.geminiApiKey) {
+      const result = await callGemini(prompt);
+      // Ensure overallScore is preserved from our calculation
+      result.overallScore = avgScore;
+      return result;
+    }
+  } catch (err) {
+    console.warn('AI Service notice: Using fallback overall evaluation.', err.message);
+  }
+
+  // Fallback if AI fails
   return {
     overallScore: avgScore,
     strengths: [
-      'Strong understanding of fundamental concepts',
-      'Clear communication of technical ideas',
+      'Demonstrated understanding of core concepts across multiple questions',
+      'Provided structured responses with relevant technical terminology',
     ],
     improvements: [
-      'Provide deeper technical specifics and architectural context',
-      'Discuss performance trade-offs and complexity analysis',
+      'Expand answers with specific code examples and real-world use cases',
+      'Discuss performance trade-offs and scalability considerations in more depth',
     ],
   };
 };

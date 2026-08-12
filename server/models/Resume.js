@@ -28,6 +28,11 @@ const resumeSchema = new mongoose.Schema(
       detectedSkills: { type: [String], default: [] },
       missingSkills: { type: [String], default: [] },
     },
+    // Extracted PDF text content (persisted for cloud deployments)
+    extractedText: {
+      type: String,
+      default: '',
+    },
     analyzedAt: {
       type: Date,
       default: null,

@@ -58,7 +58,7 @@ const getDashboardData = asyncHandler(async (req, res) => {
   );
   const userInterviews = await Interview.find({ userId });
 
-  const resumeScore = resume?.analysis?.score || profile?.skills?.length ? Math.min(85, 60 + profile.skills.length * 4) : 0;
+  const resumeScore = resume?.analysis?.score || 0;
   const applicationsCount = userApplications.length;
   const shortlistedCount = userApplications.filter(
     (a) => a.status === 'Shortlisted' || a.status === 'Selected'

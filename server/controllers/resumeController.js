@@ -21,6 +21,21 @@ const getResume = asyncHandler(async (req, res) => {
   res.json({ success: true, data: resume });
 });
 
+/**
+ * Extract text from a PDF buffer using pdf-parse
+ */
+const extractPdfText = async (fileBuffer, fileName) => {
+  try {
+    if (fileName && fileName.toLowerCase().endsWith('.pdf') && fileBuffer) {
+      const parsedData = await pdfParse(fileBuffer);
+      return (parsedData.text || '').trim();
+    }
+  } catch (err) {
+    console.warn('PDF text extraction notice:', err.message);
+  }
+  return '';
+};
+
 // @desc    Upload or replace resume PDF
 // @route   POST /api/resumes
 // @access  Private
@@ -34,12 +49,28 @@ const uploadResumeFile = asyncHandler(async (req, res) => {
   const fileName = req.file.originalname;
   const fileSize = req.file.size;
 
+  // Extract PDF text immediately from the upload buffer before Render discards it
+  let extractedText = '';
+  try {
+    const filePath = path.join(__dirname, '..', 'uploads', 'resumes', req.file.filename);
+    if (fs.existsSync(filePath)) {
+      const dataBuffer = fs.readFileSync(filePath);
+      extractedText = await extractPdfText(dataBuffer, fileName);
+    }
+  } catch (err) {
+    console.warn('PDF extraction during upload:', err.message);
+  }
+
   let resume = await Resume.findOne({ userId: req.user._id });
 
   if (resume) {
     resume.fileUrl = fileUrl;
     resume.fileName = fileName;
     resume.fileSize = fileSize;
+    resume.extractedText = extractedText;
+    // Clear old analysis when a new file is uploaded
+    resume.analysis = { score: null, strengths: [], improvements: [], detectedSkills: [], missingSkills: [] };
+    resume.analyzedAt = null;
     await resume.save();
   } else {
     resume = await Resume.create({
@@ -47,13 +78,16 @@ const uploadResumeFile = asyncHandler(async (req, res) => {
       fileUrl,
       fileName,
       fileSize,
+      extractedText,
     });
   }
 
   res.status(200).json({
     success: true,
     data: resume,
-    message: 'Resume uploaded successfully',
+    message: extractedText.length > 20
+      ? `Resume uploaded & ${extractedText.split(/\s+/).length} words extracted successfully!`
+      : 'Resume uploaded successfully',
   });
 });
 
@@ -64,11 +98,18 @@ const runAIResumeAnalysis = asyncHandler(async (req, res) => {
   const resume = await Resume.findOne({ userId: req.user._id });
   const profile = await Profile.findOne({ userId: req.user._id });
 
-  const userSkills = profile?.skills || [];
-  let extractedPdfText = '';
+  if (!resume) {
+    res.status(400);
+    throw new Error('Please upload a resume first before running analysis');
+  }
 
-  // Extract raw text if a local PDF file exists
-  if (resume && resume.fileUrl) {
+  const userSkills = profile?.skills || [];
+
+  // Priority 1: Use text already extracted and stored in MongoDB
+  let extractedPdfText = resume.extractedText || '';
+
+  // Priority 2: Try local file as fallback (only works in local dev, not on Render)
+  if (extractedPdfText.length < 20 && resume.fileUrl) {
     try {
       const relativePath = resume.fileUrl.replace(/^\/uploads\//, '');
       const filePath = path.join(__dirname, '..', 'uploads', relativePath);
@@ -76,28 +117,37 @@ const runAIResumeAnalysis = asyncHandler(async (req, res) => {
       if (fs.existsSync(filePath) && filePath.toLowerCase().endsWith('.pdf')) {
         const dataBuffer = fs.readFileSync(filePath);
         const parsedData = await pdfParse(dataBuffer);
-        extractedPdfText = parsedData.text || '';
+        extractedPdfText = (parsedData.text || '').trim();
+
+        // Persist extracted text for future analyses
+        if (extractedPdfText.length > 20) {
+          resume.extractedText = extractedPdfText;
+        }
       }
     } catch (err) {
-      console.warn('PDF text extraction notice:', err.message);
+      console.warn('PDF text extraction fallback notice:', err.message);
     }
   }
 
-  const resumeContext = extractedPdfText.trim().length > 20
-    ? `Extracted Resume Content:\n${extractedPdfText.substring(0, 3000)}`
-    : `File Name: ${resume?.fileName || 'Candidate Profile'}`;
-
-  // Call AI Service
-  const analysisResult = await analyzeResume(resumeContext, userSkills);
-
-  if (resume) {
-    resume.analysis = analysisResult;
-    resume.analyzedAt = new Date();
-    await resume.save();
+  // Build rich context for AI
+  let resumeContext;
+  if (extractedPdfText.length > 20) {
+    resumeContext = `Extracted Resume Content:\n${extractedPdfText.substring(0, 4000)}`;
+  } else {
+    // No text available — tell the AI clearly
+    resumeContext = `Resume File: ${resume.fileName}. No extractable text content found in the PDF. User profile skills: ${userSkills.join(', ') || 'None specified'}. Analyze based on the available skill set.`;
   }
 
+  // Call AI Service (Gemini API)
+  const analysisResult = await analyzeResume(resumeContext, userSkills);
+
+  // Save analysis results to MongoDB
+  resume.analysis = analysisResult;
+  resume.analyzedAt = new Date();
+  await resume.save();
+
   // Auto-update user profile with newly detected skills
-  if (profile && analysisResult.detectedSkills.length > 0) {
+  if (profile && analysisResult.detectedSkills && analysisResult.detectedSkills.length > 0) {
     const mergedSkills = Array.from(
       new Set([...(profile.skills || []), ...analysisResult.detectedSkills])
     );
@@ -108,7 +158,11 @@ const runAIResumeAnalysis = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: analysisResult,
-    message: 'AI Resume Analysis completed',
+    pdfTextExtracted: extractedPdfText.length > 20,
+    wordCount: extractedPdfText.split(/\s+/).length,
+    message: extractedPdfText.length > 20
+      ? `AI analyzed ${extractedPdfText.split(/\s+/).length} words from your resume`
+      : 'AI analysis completed based on your profile skills',
   });
 });
 
