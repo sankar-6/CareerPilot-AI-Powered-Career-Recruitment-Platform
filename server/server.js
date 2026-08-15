@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const config = require('./config/env');
 const connectDB = require('./config/db');
 
@@ -88,6 +89,18 @@ app.use('/interviews', interviewRouter);
 
 app.use('/api/dashboard', dashboardRouter);
 app.use('/dashboard', dashboardRouter);
+
+// ─── Serve Client Build (for unified deployment if client/dist exists) ───
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // ─── 404 Handler ────────────────────────────────────────────
 app.use((req, res) => {
